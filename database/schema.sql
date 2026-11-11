@@ -87,8 +87,7 @@ CREATE TABLE customers (
 
     -- ── Keys & Constraints ──────────────────────────────────────────────────
     CONSTRAINT pk_customers       PRIMARY KEY (customer_id),
-    CONSTRAINT uq_customers_email UNIQUE      (email),
-    CONSTRAINT chk_customers_dob  CHECK       (date_of_birth < CURRENT_DATE)
+    CONSTRAINT uq_customers_email UNIQUE      (email)
 
 ) ENGINE=InnoDB
   DEFAULT CHARSET=utf8mb4
