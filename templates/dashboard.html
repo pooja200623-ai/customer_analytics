@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Segmentation & Purchase Behavior Analytics | Dashboard</title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Remix Icon -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+  <!-- Custom CSS -->
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- ====================================================================
+         1. SIDEBAR NAVIGATION
+         ==================================================================== -->
+    <aside class="sidebar" id="sidebar">
+      <!-- Sidebar Header / Logo -->
+      <div class="sidebar-header">
+        <div class="logo-icon">
+          <i class="ri-pie-chart-2-fill"></i>
+        </div>
+        <div class="logo-text">
+          <h2>SegmentIQ</h2>
+          <span>Behavior Analytics</span>
+        </div>
+      </div>
+
+      <!-- Navigation Menu -->
+      <div class="sidebar-menu-wrapper">
+        <div class="menu-label">Main Menu</div>
+        <ul class="sidebar-menu">
+          <li>
+            <a href="#" class="active">
+              <i class="ri-dashboard-3-line"></i>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li>
+            <a href="#">
+              <i class="ri-user-settings-line"></i>
+              <span>Customer Management</span>
+            </a>
+          </li>
+          <li>
+            <a href="#">
+              <i class="ri-group-line"></i>
+              <span>Customer Segmentation</span>
+              <span class="badge-tag">5 Tiers</span>
+            </a>
+          </li>
+          <li>
+            <a href="#">
+              <i class="ri-shopping-bag-3-line"></i>
+              <span>Purchase Behavior</span>
+            </a>
+          </li>
+          <li>
+            <a href="#">
+              <i class="ri-line-chart-line"></i>
+              <span>Sales Analysis</span>
+            </a>
+          </li>
+          <li>
+            <a href="#">
+              <i class="ri-repeat-2-line"></i>
+              <span>Customer Retention</span>
+            </a>
+          </li>
+          <li>
+            <a href="#">
+              <i class="ri-file-chart-line"></i>
+              <span>Reports</span>
+            </a>
+          </li>
+        </ul>
+
+        <div class="menu-label">Administration</div>
+        <ul class="sidebar-menu">
+          <li>
+            <a href="/admin/" target="_blank">
+              <i class="ri-admin-line"></i>
+              <span>Django Admin</span>
+            </a>
+          </li>
+          <li>
+            <a href="#">
+              <i class="ri-settings-4-line"></i>
+              <span>Settings</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- User Profile at bottom -->
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <div class="user-avatar">AD</div>
+          <div class="user-details">
+            <h4>Analytics Lead</h4>
+            <p>admin@customeranalytics.io</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ====================================================================
+         2. MAIN CONTENT WRAPPER
+         ==================================================================== -->
+    <div class="main-wrapper">
+      
+      <!-- Topbar Header -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="sidebar-toggle-btn" id="sidebarToggle" aria-label="Toggle Sidebar">
+            <i class="ri-menu-2-line"></i>
+          </button>
+          <div class="page-title">
+            <h1>Executive Dashboard</h1>
+            <p>Real-time customer segmentation & cohort purchase intelligence</p>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <!-- Quick Search -->
+          <div class="search-box">
+            <i class="ri-search-line"></i>
+            <input type="text" placeholder="Search customers, SKUs, orders...">
+          </div>
+
+          <!-- Live Date Badge -->
+          <div class="date-badge">
+            <i class="ri-calendar-event-line"></i>
+            <span>Nov 2026 Cohort</span>
+          </div>
+
+          <!-- Notification Button -->
+          <button class="action-btn" title="Notifications">
+            <i class="ri-notification-3-line"></i>
+            <span class="btn-indicator"></span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Content Body -->
+      <main class="content-body">
+        
+        <!-- ================================================================
+             3. DASHBOARD SUMMARY CARDS (5 METRICS)
+             ================================================================ -->
+        <section class="metrics-grid">
+          
+          <!-- Card 1: Total Customers -->
+          <div class="metric-card primary">
+            <div class="metric-info">
+              <h3>Total Customers</h3>
+              <div class="metric-value">30</div>
+              <div class="metric-trend positive">
+                <i class="ri-arrow-up-line"></i> +12.5%
+                <span>vs last quarter</span>
+              </div>
+            </div>
+            <div class="metric-icon-wrap">
+              <i class="ri-team-line"></i>
+            </div>
+          </div>
+
+          <!-- Card 2: Total Revenue -->
+          <div class="metric-card success">
+            <div class="metric-info">
+              <h3>Total Revenue</h3>
+              <div class="metric-value">₹18,81,872</div>
+              <div class="metric-trend positive">
+                <i class="ri-arrow-up-line"></i> +18.4%
+                <span>YoY growth</span>
+              </div>
+            </div>
+            <div class="metric-icon-wrap">
+              <i class="ri-money-rupee-circle-line"></i>
+            </div>
+          </div>
+
+          <!-- Card 3: Total Orders -->
+          <div class="metric-card purple">
+            <div class="metric-info">
+              <h3>Total Orders</h3>
+              <div class="metric-value">60</div>
+              <div class="metric-trend positive">
+                <i class="ri-arrow-up-line"></i> +8.2%
+                <span>order volume</span>
+              </div>
+            </div>
+            <div class="metric-icon-wrap">
+              <i class="ri-shopping-cart-2-line"></i>
+            </div>
+          </div>
+
+          <!-- Card 4: Average Order Value -->
+          <div class="metric-card warning">
+            <div class="metric-info">
+              <h3>Avg Order Value</h3>
+              <div class="metric-value">₹31,365</div>
+              <div class="metric-trend positive">
+                <i class="ri-arrow-up-line"></i> +5.7%
+                <span>high ticket basket</span>
+              </div>
+            </div>
+            <div class="metric-icon-wrap">
+              <i class="ri-funds-box-line"></i>
+            </div>
+          </div>
+
+          <!-- Card 5: Active Customers -->
+          <div class="metric-card info">
+            <div class="metric-info">
+              <h3>Active Customers</h3>
+              <div class="metric-value">30 <span style="font-size: 14px; font-weight: 500; color: #64748b;">(100%)</span></div>
+              <div class="metric-trend positive">
+                <i class="ri-checkbox-circle-line"></i> 0 Churned
+                <span>healthy retention</span>
+              </div>
+            </div>
+            <div class="metric-icon-wrap">
+              <i class="ri-user-star-line"></i>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ================================================================
+             4. CHARTS SECTION (2-COLUMNS: Monthly Sales & Customer Segments)
+             ================================================================ -->
+        <section class="charts-grid">
+          
+          <!-- Chart 1: Monthly Sales -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div class="chart-title">
+                <h3>Monthly Sales & Order Volume</h3>
+                <p>Gross transaction revenue and order frequency across 2026</p>
+              </div>
+              <div class="chart-filter-pills">
+                <button class="filter-pill active">2026</button>
+                <button class="filter-pill">2025</button>
+              </div>
+            </div>
+            <div class="chart-canvas-container">
+              <canvas id="monthlySalesChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 2: Customer Segments -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div class="chart-title">
+                <h3>Customer Segments</h3>
+                <p>RFM distribution by loyalty tier</p>
+              </div>
+              <span class="badge-tag" style="background: #f1f5f9; color: #475569;">30 Users</span>
+            </div>
+            <div class="chart-canvas-container" style="min-height: 250px;">
+              <canvas id="customerSegmentsChart"></canvas>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ================================================================
+             5. SECONDARY CHARTS (Full-width Revenue Trends)
+             ================================================================ -->
+        <section class="charts-grid-secondary">
+          <div class="chart-card">
+            <div class="chart-header">
+              <div class="chart-title">
+                <h3>Weekly Revenue Growth Trends</h3>
+                <p>12-week velocity showing cumulative and peak sales cycles</p>
+              </div>
+              <div class="chart-filter-pills">
+                <button class="filter-pill active">Last 12 Weeks</button>
+                <button class="filter-pill">Q3 - Q4</button>
+              </div>
+            </div>
+            <div class="chart-canvas-container" style="min-height: 240px;">
+              <canvas id="revenueTrendsChart"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             6. RECENT ORDERS TABLE
+             ================================================================ -->
+        <section class="table-card">
+          <div class="table-header">
+            <div class="table-title">
+              <h3>Recent Orders</h3>
+              <p>Real-time customer transactions, shipment status, and values</p>
+            </div>
+            <a href="/admin/analytics/order/" target="_blank" class="table-action-link">
+              <span>View All 60 Orders</span>
+              <i class="ri-arrow-right-line"></i>
+            </a>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Customer</th>
+                  <th>Segment</th>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>City</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="order-id-cell">#ORD-0060</td>
+                  <td>
+                    <div class="customer-cell">
+                      <div class="avatar">LK</div>
+                      <div class="info">
+                        <h5>Lavanya Krishnan</h5>
+                        <p>lavanya.krishnan@gmail.com</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="segment-tag silver">Silver</span></td>
+                  <td>Nov 07, 2026</td>
+                  <td class="amount-cell">₹12,248.00</td>
+                  <td>Chennai, TN</td>
+                  <td><span class="badge pending"><span class="badge-dot"></span>Pending</span></td>
+                </tr>
+
+                <tr>
+                  <td class="order-id-cell">#ORD-0059</td>
+                  <td>
+                    <div class="customer-cell">
+                      <div class="avatar">RC</div>
+                      <div class="info">
+                        <h5>Riya Chopra</h5>
+                        <p>riya.chopra@gmail.com</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="segment-tag silver">Silver</span></td>
+                  <td>Nov 05, 2026</td>
+                  <td class="amount-cell">₹3,874.00</td>
+                  <td>Mumbai, MH</td>
+                  <td><span class="badge pending"><span class="badge-dot"></span>Pending</span></td>
+                </tr>
+
+                <tr>
+                  <td class="order-id-cell">#ORD-0058</td>
+                  <td>
+                    <div class="customer-cell">
+                      <div class="avatar">RG</div>
+                      <div class="info">
+                        <h5>Rahul Gupta</h5>
+                        <p>rahul.gupta@gmail.com</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="segment-tag bronze">Bronze</span></td>
+                  <td>Nov 04, 2026</td>
+                  <td class="amount-cell">₹2,222.00</td>
+                  <td>Kolkata, WB</td>
+                  <td><span class="badge pending"><span class="badge-dot"></span>Pending</span></td>
+                </tr>
+
+                <tr>
+                  <td class="order-id-cell">#ORD-0055</td>
+                  <td>
+                    <div class="customer-cell">
+                      <div class="avatar">AS</div>
+                      <div class="info">
+                        <h5>Aarav Sharma</h5>
+                        <p>aarav.sharma@gmail.com</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="segment-tag platinum">Platinum</span></td>
+                  <td>Nov 01, 2026</td>
+                  <td class="amount-cell">₹33,629.00</td>
+                  <td>Bengaluru, KA</td>
+                  <td><span class="badge processing"><span class="badge-dot"></span>Confirmed</span></td>
+                </tr>
+
+                <tr>
+                  <td class="order-id-cell">#ORD-0050</td>
+                  <td>
+                    <div class="customer-cell">
+                      <div class="avatar">KM</div>
+                      <div class="info">
+                        <h5>Karan Malhotra</h5>
+                        <p>karan.malhotra@outlook.com</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="segment-tag platinum">Platinum</span></td>
+                  <td>Oct 05, 2026</td>
+                  <td class="amount-cell">₹51,820.00</td>
+                  <td>Gurugram, HR</td>
+                  <td><span class="badge shipped"><span class="badge-dot"></span>Shipped</span></td>
+                </tr>
+
+                <tr>
+                  <td class="order-id-cell">#ORD-0049</td>
+                  <td>
+                    <div class="customer-cell">
+                      <div class="avatar">VK</div>
+                      <div class="info">
+                        <h5>Varun Kapoor</h5>
+                        <p>varun.kapoor@gmail.com</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="segment-tag gold">Gold</span></td>
+                  <td>Sep 30, 2026</td>
+                  <td class="amount-cell">₹1,23,899.00</td>
+                  <td>Mumbai, MH</td>
+                  <td><span class="badge delivered"><span class="badge-dot"></span>Delivered</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </main>
+
+      <!-- Dashboard Footer -->
+      <footer class="dashboard-footer">
+        <p>&copy; 2026 Customer Segmentation & Purchase Behavior Analytics. All rights reserved.</p>
+        <p>Built with MySQL, Django & Modern Web UI</p>
+      </footer>
+
+    </div>
+
+  </div>
+
+  <!-- Custom Dashboard JavaScript -->
+  <script src="{% static 'js/dashboard.js' %}"></script>
+</body>
+</html>
