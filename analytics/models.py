@@ -73,6 +73,16 @@ class Customer(models.Model):
     def full_name(self):
         return f"{self.first_name} {self.last_name}".strip()
 
+    @property
+    def age(self):
+        if not self.date_of_birth:
+            return None
+        from datetime import date
+        today = date.today()
+        return today.year - self.date_of_birth.year - (
+            (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day)
+        )
+
     def __str__(self):
         return f"{self.full_name} ({self.email})"
 
