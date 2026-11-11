@@ -1,179 +1,134 @@
-# Customer Segmentation & Purchase Behavior Analytics Using SQL
+# Customer Segmentation & Purchase Behavior Analytics (SQL Project)
 
-> **Step 1 — Database Design & Sample Data**  
-> Engine: MySQL 8.0+ · Character Set: utf8mb4
+A professional, portfolio-grade **pure MySQL analytics project** designed to perform exploratory data analysis, customer segmentation, cohort retention, basket affinity, and executive financial reporting on an e-commerce transactional database.
 
 ---
 
-## 📁 Project Structure
+## 📌 Project Overview
+
+This repository demonstrates production-level SQL proficiency by answering complex business questions using modern SQL techniques:
+- **RFM Customer Segmentation** (Recency, Frequency, Monetary modeling via statistical quartiles)
+- **Customer Lifetime Value (CLV & LTV)** and 80/20 Pareto revenue concentration
+- **Market Basket Analysis** (cross-category co-purchase affinity & order depth)
+- **Time-Series Sales Growth** (MoM & QoQ trajectory, moving revenue metrics)
+- **Customer Cohort Retention & Churn Analysis** (retention decay matrices & proactive CRM alerts)
+- **Executive Business Reports & 360-Degree Customer Summaries**
+
+---
+
+## 🛠️ Technology Stack
+
+- **RDBMS**: MySQL 8.0+
+- **Database Engine**: InnoDB
+- **Character Encoding**: `utf8mb4` / `utf8mb4_unicode_ci`
+- **Key SQL Concepts Used**:
+  - **Common Table Expressions (CTEs)**: Recursive and multi-stage CTE pipelines
+  - **Window Functions**: `NTILE()`, `ROW_NUMBER()`, `DENSE_RANK()`, `PERCENT_RANK()`, `LAG()`, `LEAD()`, `SUM() OVER ()`, `AVG() OVER ()`
+  - **Complex JOINs**: Multi-table INNER/LEFT JOINs, self-joins for co-occurrence, and cross joins for summary totals
+  - **Conditional Logic**: Multi-tier `CASE` expressions for tier scoring and cohort grouping
+  - **Aggregations & Filtering**: `HAVING`, `GROUP BY`, date-part extraction (`DATE_FORMAT`, `TIMESTAMPDIFF`, `DATEDIFF`)
+  - **Data Integrity**: Primary keys, foreign key constraints (`CASCADE` & `RESTRICT`), uniqueness constraints, and checks
+
+---
+
+## 📁 Repository & File Structure
 
 ```
 customer_analytics/
-└── database/
-    ├── schema.sql       ← DDL: CREATE TABLE, constraints, indexes
-    └── sample_data.sql  ← DML: INSERT seed data for all tables
+├── database/
+│   ├── schema.sql                         # Database setup, 6 tables, keys, constraints, and indexes
+│   └── sample_data.sql                    # Seed dataset (10 categories, 55 products, 30 customers, 60 orders, 110 items, 65 payments)
+│
+├── sql_scripts/
+│   ├── 01_customer_segmentation.sql       # RFM modeling, Pareto spend percentiles, demographic & geo clustering
+│   ├── 02_purchase_behavior_analysis.sql  # Re-order velocity, market basket cross-selling, basket depth, payments
+│   ├── 03_sales_analysis.sql              # MoM revenue growth, category gross margins, top SKUs, delivery SLAs
+│   ├── 04_customer_retention.sql          # Monthly cohort retention matrices, churn risk alerts, repeat buyer analysis
+│   └── 05_business_reports.sql            # C-level KPI scorecard, QBR matrix, and 360-degree customer profile
+│
+└── README.md                              # Project documentation & portfolio guide
 ```
 
 ---
 
-## 🗄️ Database: `customer_analytics`
-
-### Entity-Relationship Overview
+## 🗄️ Relational Schema (ERD Overview)
 
 ```
-categories ──< products ──< order_items >── orders >── customers
-                                                 └──< payments
+categories (10 rows)
+   │
+   └──< products (55 rows)
+           │
+           └──< order_items (110 rows) >── orders (60 rows) >── customers (30 rows)
+                                              │
+                                              └──< payments (65 rows)
 ```
 
-| Relationship | Cardinality | Description |
-|---|---|---|
-| categories → products | 1 : Many | A category contains many products |
-| customers → orders | 1 : Many | A customer can place many orders |
-| orders → order_items | 1 : Many | An order contains multiple line items |
-| products → order_items | 1 : Many | A product can appear in many orders |
-| orders → payments | 1 : Many | An order can have split / EMI payments |
+| Table Name | Description | Primary Key | Foreign Keys |
+|---|---|---|---|
+| `categories` | Product departments & classifications | `category_id` | — |
+| `products` | SKUs, cost prices, unit prices, and stock inventory | `product_id` | `category_id` → `categories.category_id` |
+| `customers` | Demographics, addresses, acquisition dates, segments | `customer_id` | — |
+| `orders` | Transaction headers, point-in-time addresses, totals | `order_id` | `customer_id` → `customers.customer_id` |
+| `order_items` | Individual line items (quantity, unit price, discounts) | `order_item_id` | `order_id` → `orders.order_id`<br>`product_id` → `products.product_id` |
+| `payments` | Transaction references, methods, statuses, gateways | `payment_id` | `order_id` → `orders.order_id` |
 
 ---
 
-## 📋 Tables
+## 🚀 Setup & Execution Guide
 
-### 1. `categories`
-Stores product category master data.
-
-| Column | Type | Notes |
-|---|---|---|
-| `category_id` | INT UNSIGNED PK | Auto-increment |
-| `category_name` | VARCHAR(100) | Unique |
-| `description` | TEXT | Optional |
-| `is_active` | TINYINT(1) | Soft delete flag |
-| `created_at / updated_at` | DATETIME | Audit timestamps |
-
----
-
-### 2. `customers`
-Core customer master — the backbone of all analytics.
-
-| Column | Type | Notes |
-|---|---|---|
-| `customer_id` | INT UNSIGNED PK | Auto-increment |
-| `first_name / last_name` | VARCHAR(60) | Required |
-| `email` | VARCHAR(150) | Unique, NOT NULL |
-| `phone` | VARCHAR(20) | Optional |
-| `gender` | ENUM | Male / Female / Other |
-| `date_of_birth` | DATE | Used for age-based segmentation |
-| `segment` | ENUM | New / Bronze / Silver / Gold / Platinum |
-| `address_*` | VARCHAR | Full address snapshot |
-| `registration_date` | DATE | Customer acquisition date |
-| `is_active` | TINYINT(1) | Soft delete |
-
-**Indexes:** `segment`, `(city, state)`, `registration_date`
-
----
-
-### 3. `products`
-Individual SKUs linked to a category.
-
-| Column | Type | Notes |
-|---|---|---|
-| `product_id` | INT UNSIGNED PK | Auto-increment |
-| `category_id` | INT UNSIGNED FK | → categories |
-| `sku` | VARCHAR(50) | Unique |
-| `unit_price / cost_price` | DECIMAL(10,2) | CHECK ≥ 0 |
-| `stock_quantity` | INT | CHECK ≥ 0 |
-| `reorder_level` | INT | Low-stock threshold |
-| `brand` | VARCHAR(100) | Optional |
-
----
-
-### 4. `orders`
-Order header — one row per customer order.
-
-| Column | Type | Notes |
-|---|---|---|
-| `order_id` | INT UNSIGNED PK | Auto-increment |
-| `customer_id` | INT UNSIGNED FK | → customers |
-| `order_date` | DATETIME | When order was placed |
-| `status` | ENUM | Pending → Delivered / Returned |
-| `shipping_*` | VARCHAR | Address snapshot at order time |
-| `subtotal / discount_amount / tax_amount / shipping_charge / total_amount` | DECIMAL | Full financial breakdown |
-| `estimated_delivery / actual_delivery` | DATE | Delivery tracking |
-
----
-
-### 5. `order_items`
-Line items within an order (order ↔ product bridge table).
-
-| Column | Type | Notes |
-|---|---|---|
-| `order_item_id` | INT UNSIGNED PK | Auto-increment |
-| `order_id` | INT UNSIGNED FK | → orders (CASCADE DELETE) |
-| `product_id` | INT UNSIGNED FK | → products |
-| `quantity` | INT UNSIGNED | CHECK > 0 |
-| `unit_price` | DECIMAL(10,2) | Price at time of purchase |
-| `discount_pct` | DECIMAL(5,2) | 0–100% |
-| `line_total` | DECIMAL(12,2) | qty × price × (1 − discount%) |
-
-**Unique:** `(order_id, product_id)` — prevents duplicate SKUs per order
-
----
-
-### 6. `payments`
-Payment records linked to orders (supports EMI / split payments).
-
-| Column | Type | Notes |
-|---|---|---|
-| `payment_id` | INT UNSIGNED PK | Auto-increment |
-| `order_id` | INT UNSIGNED FK | → orders |
-| `method` | ENUM | Credit Card, UPI, EMI, COD, etc. |
-| `amount` | DECIMAL(12,2) | CHECK > 0 |
-| `status` | ENUM | Pending / Authorized / Captured / Refunded |
-| `transaction_ref` | VARCHAR(100) | Gateway UTR / TXN ID (Unique) |
-| `gateway` | VARCHAR(60) | Razorpay, Paytm, etc. |
-
----
-
-## 📊 Sample Data Summary
-
-| Table | Rows | Details |
-|---|---|---|
-| `categories` | 10 | Electronics, Clothing, Home & Kitchen, Books, Sports, Beauty, Toys, Grocery, Jewellery, Automotive |
-| `products` | 50 | ~5 per category — real brand names, realistic Indian pricing |
-| `customers` | 30 | Diverse cities (Mumbai, Bengaluru, Delhi, Chennai…), all segments, mixed genders |
-| `orders` | 60 | Jan 2025 – Nov 2026, statuses from Pending to Returned |
-| `order_items` | 110 | Multi-item orders included; price-at-purchase preserved |
-| `payments` | 65 | 6 payment methods, EMI instalment rows, refund rows |
-
----
-
-## 🚀 Setup Instructions
+Open any MySQL CLI or GUI client (MySQL Workbench, DBeaver, DataGrip, VS Code SQLTools) and run:
 
 ```sql
--- Step 1: Run schema first
+-- Step 1: Initialize database schema & constraints
 SOURCE database/schema.sql;
 
--- Step 2: Seed sample data
+-- Step 2: Populate sample database records
 SOURCE database/sample_data.sql;
 
--- Step 3: Verify row counts
-SELECT 'categories'  AS tbl, COUNT(*) AS rows FROM categories
-UNION ALL SELECT 'customers',   COUNT(*) FROM customers
-UNION ALL SELECT 'products',    COUNT(*) FROM products
-UNION ALL SELECT 'orders',      COUNT(*) FROM orders
-UNION ALL SELECT 'order_items', COUNT(*) FROM order_items
-UNION ALL SELECT 'payments',    COUNT(*) FROM payments;
+-- Step 3: Run analytics modules
+SOURCE sql_scripts/01_customer_segmentation.sql;
+SOURCE sql_scripts/02_purchase_behavior_analysis.sql;
+SOURCE sql_scripts/03_sales_analysis.sql;
+SOURCE sql_scripts/04_customer_retention.sql;
+SOURCE sql_scripts/05_business_reports.sql;
 ```
 
 ---
 
-## 🔑 Key Design Decisions
+## 📊 Analytical Modules & Business Questions
 
-| Decision | Rationale |
-|---|---|
-| `utf8mb4` charset | Full Unicode + emoji support |
-| `DECIMAL` for money | Avoids floating-point rounding errors |
-| Price snapshot in `order_items.unit_price` | Preserves historical accuracy if product price changes |
-| Address snapshot in `orders` | Shipping address is immutable after order is placed |
-| Soft deletes (`is_active`) | Retain historical customer/product data for analytics |
-| `order_items` unique `(order_id, product_id)` | Prevents duplicate SKU rows in one order |
-| Multiple payments per order | Supports EMI, split payments, and partial refunds |
-| `segment` ENUM on customers | Enables fast filter/aggregation for segmentation queries |
+### 1. Customer Segmentation (`01_customer_segmentation.sql`)
+- **Q1: Dynamic RFM Segmentation**: Computes Recency, Frequency, and Monetary scores using `NTILE(4)` to classify accounts into *Champions (VIP)*, *Loyal Customers*, *Potential Loyalists*, and *At-Risk*.
+- **Q2: Pareto 80/20 & Spend Percentiles**: Calculates `PERCENT_RANK()` and running cumulative revenue to identify the contribution of top 10% and top 25% spenders.
+- **Q3: Demographic Cohorts**: Evaluates purchasing power and AOV across age brackets (<25 Gen Z, 25-34 Millennials, 35-44 Gen X, 45+ Boomers) and genders.
+- **Q4: Geographic Clustering**: Ranks cities and states by total GMV and customer lifetime value.
+
+### 2. Purchase Behavior Analysis (`02_purchase_behavior_analysis.sql`)
+- **Q1: Repeat Purchase Velocity**: Employs `LAG()` window functions to measure days elapsed between 1st, 2nd, 3rd, and 4th+ orders.
+- **Q2: Market Basket Co-Purchase Affinity**: Self-joins `order_items` across unique product categories to surface top cross-sell bundles.
+- **Q3: Basket Size & Multi-Item Depth**: Groups orders into single-item, double, medium, and bulk baskets to analyze unit volume vs discount elasticity.
+- **Q4: Payment Method Preferences**: Evaluates transaction volume, average ticket size, and payment gateway capture rates (Credit Card, UPI, EMI, COD, Net Banking).
+
+### 3. Sales Analysis (`03_sales_analysis.sql`)
+- **Q1: Monthly Trajectory & MoM Growth**: Uses `LAG()` and `SUM() OVER ()` for running cumulative revenue and month-over-month growth percentages.
+- **Q2: Category Profitability**: Measures Gross Merchandise Value (GMV), Cost of Goods Sold (COGS), and Gross Margin % across categories.
+- **Q3: Top 10 Best-Selling SKUs**: Ranks products by unit volume and revenue contribution.
+- **Q4: Delivery SLA Performance**: Compares actual vs estimated delivery timestamps to evaluate fulfillment reliability.
+
+### 4. Customer Retention (`04_customer_retention.sql`)
+- **Q1: Monthly Cohort Retention Matrix**: Organizes customers into acquisition cohorts and measures retention activity in subsequent quarters.
+- **Q2: Churn Risk & CRM Triggers**: Flags inactive accounts based on recency thresholds and generates targeted marketing actions (e.g., win-back vouchers).
+- **Q3: One-Time Buyers vs Repeat Loyalists**: Compares customer volume and aggregate revenue generated by single-purchase vs multi-purchase accounts.
+
+### 5. Business Reports (`05_business_reports.sql`)
+- **Report 1: Executive KPI Scorecard**: Single-row C-level summary displaying active user rates, total revenue, discount rates, AOV, and ARPU.
+- **Report 2: Quarterly Business Review (QBR)**: Compares performance across 8 calendar quarters (Q1 2025 to Q4 2026) with QoQ percentage growth.
+- **Report 3: Customer 360 Lifetime Profile**: Generates an exhaustive customer view combining demographics, total spend, favorite category, preferred payment method, and overall rank.
+
+---
+
+## 🏆 Portfolio Highlights
+
+- **Standard SQL Compliance**: 100% compliant with MySQL 8.0+ `ONLY_FULL_GROUP_BY` strict mode.
+- **Production-Ready Formatting**: Explicit column aliases, currency formatting (`₹`), and clean commenting.
+- **Real-World Business Impact**: Directly maps analytical outputs to marketing, inventory, and executive business decisions.
