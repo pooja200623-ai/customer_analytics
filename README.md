@@ -15,16 +15,16 @@ An end-to-end, portfolio-ready data analytics project built entirely with **MySQ
 3. [Technologies Used](#3-technologies-used)
 4. [Database Structure & Schema](#4-database-structure--schema)
 5. [Project Modules](#5-project-modules)
-   - [Customer Segmentation](#module-1-customer-segmentation-customer_segmentationsql)
-   - [Purchase Behavior Analysis](#module-2-purchase-behavior-analysis-purchase_behaviorsql)
-   - [Sales Analysis](#module-3-sales-analysis-sales_analysissql)
-   - [Customer Retention Analysis](#module-4-customer-retention-analysis-customer_retentionsql)
-   - [Business Insights & Reports](#module-5-business-insights--reports-business_insightssql)
-   - [Data Quality & Integrity Validation](#module-6-data-quality--integrity-validation-data_quality_checkssql)
-   - [Executive Business Summary](#module-7-executive-business-summary-final_business_summarysql)
+   - [Customer Segmentation (`customer_segmentation.sql`)](#module-1-customer-segmentation-customer_segmentationsql)
+   - [Purchase Behavior Analysis (`purchase_behavior.sql`)](#module-2-purchase-behavior-analysis-purchase_behaviorsql)
+   - [Sales Analysis (`sales_analysis.sql`)](#module-3-sales-analysis-sales_analysissql)
+   - [Customer Retention Analysis (`customer_retention.sql`)](#module-4-customer-retention-analysis-customer_retentionsql)
+   - [Business Insights & Reports (`business_insights.sql`)](#module-5-business-insights--reports-business_insightssql)
+   - [Data Quality & Integrity Validation (`data_quality_checks.sql`)](#module-6-data-quality--integrity-validation-data_quality_checkssql)
+   - [Executive Business Summary (`final_business_summary.sql`)](#module-7-executive-business-summary-final_business_summarysql)
 6. [SQL Concepts & Techniques Demonstrated](#6-sql-concepts--techniques-demonstrated)
 7. [Database Setup Instructions](#7-database-setup-instructions)
-8. [How to Execute the SQL Files](#8-how-to-execute-the-sql-files)
+8. [How to Execute the SQL Files & Recommended Execution Order](#8-how-to-execute-the-sql-files--recommended-execution-order)
 9. [Sample Business Questions Answered](#9-sample-business-questions-answered)
 10. [Key Project Outcomes & Findings](#10-key-project-outcomes--findings)
 11. [Repository Organization](#11-repository-organization)
@@ -161,26 +161,32 @@ The analytical queries are organized into distinct, production-ready modules:
 - **Complete Customer 360 Lifetime Profile**: Single view of customer synthesizing demographics, loyalty tier, lifetime spend, preferred category, payment method, and recency.
 
 ### Module 6: Data Quality & Integrity Validation (`data_quality_checks.sql`)
-- **Duplicate Customer Records**: Audits duplicate emails, full names, and phone numbers.
-- **NULL & Missing Value Audits**: Systematically checks required fields across customers, products, orders, and payments.
-- **Email Format Validation**: Flags non-conformant email syntax and analyzes domain distribution.
-- **Duplicate Transactions**: Identifies same-customer same-day orders and exact financial duplicates.
-- **Referential Integrity & Orphan Records**: Verifies foreign key alignment (orphaned order items, missing customers, missing products).
-- **Amount & Price Reconciliation**: Mathematical formula validation for `orders.total_amount` and `order_items.line_total`.
-- **Date Logic Audits**: Checks future-dated orders, deliveries before order dates, and birth date anomalies.
-- **Consolidated Data Quality Dashboard**: Single-view diagnostic scorecard reporting issue counts across all tables.
+- **Purpose**: A comprehensive, read-only diagnostic test suite executing 30 production-grade data quality checks to audit database consistency, referential integrity, and mathematical formula adherence before downstream analytical reporting.
+- **Execution Order Role**: **Step 2 (Validation Phase)** — Run immediately after schema initialization and sample data seeding to ensure data hygiene prior to executing analytical modules.
+- **Audits Included**:
+  - **Duplicate Customer Records**: Detects duplicate emails, identical full names, and repeated phone numbers.
+  - **NULL & Missing Value Audits**: Systematically checks mandatory attributes across `customers`, `products`, `orders`, and `payments`.
+  - **Email Format Validation**: Flags non-conformant email syntax and analyzes email domain distributions.
+  - **Duplicate Transactions**: Identifies same-customer same-day orders and exact financial duplicates.
+  - **Referential Integrity & Orphan Records**: Validates foreign key relationships (orphaned order items, missing customers, non-existent products/categories).
+  - **Financial Arithmetic Reconciliation**: Verifies formula calculations (`total_amount = subtotal - discount + tax + shipping` and `line_total = quantity * unit_price * (1 - discount%)`).
+  - **Date & Timeline Consistency**: Flags future-dated orders, deliveries before order dates, and birth date anomalies.
+  - **Consolidated Quality Dashboard**: Generates a single-view scorecard summarizing total anomalies per audit domain.
 
 ### Module 7: Executive Business Summary (`final_business_summary.sql`)
-- **Audience Metrics**: Total registered accounts, annual registration cohorts, and active/inactive user splits.
-- **Order Volume**: Orders per year, status breakdown, and fulfillment velocity.
-- **Revenue Overview**: Gross vs net revenue, order status revenue impact, and state contribution.
-- **AOV Dynamics**: Overall AOV, segment AOV, and ticket size by payment gateway.
-- **VIP Accounts**: Top 5 spenders with deep category purchase breakdowns.
-- **Product Champions**: Top 5 SKUs by volume and revenue, with full catalog sales rankings.
-- **Category Margins**: Departmental revenue, COGS, gross profit, and profit margin percentages.
-- **Segment Demographics**: Geographic concentration of top-tier accounts.
-- **Retention Milestones**: Single vs repeat purchase rates and inter-order gap distributions.
-- **Master Executive KPI Dashboard**: Cross-joined executive summary table providing all headline metrics in a single board-level query.
+- **Purpose**: The capstone executive intelligence module providing board-ready reporting across 10 strategic KPI domains, synthesizing findings from across the database and concluding with a single-screen Master Executive KPI Dashboard.
+- **Execution Order Role**: **Step 4 (Executive Synthesis Phase)** — Run as the final capstone module after reviewing domain-specific analyses to produce unified C-level metrics.
+- **Reporting Sections**:
+  - **Audience Metrics**: Total registered accounts, annual registration cohorts, and active/inactive user splits.
+  - **Order Volume**: Orders per year, status breakdown, and fulfillment velocity.
+  - **Revenue Overview**: Gross vs net revenue, order status revenue impact, and state contribution.
+  - **AOV Dynamics**: Overall AOV, segment AOV, and ticket size by payment gateway.
+  - **VIP Accounts**: Top 5 spenders with deep category purchase breakdowns.
+  - **Product Champions**: Top 5 SKUs by volume and revenue, with full catalog sales rankings.
+  - **Category Margins**: Departmental revenue, COGS, gross profit, and profit margin percentages.
+  - **Segment Demographics**: Geographic concentration of top-tier accounts.
+  - **Retention Milestones**: Single vs repeat purchase rates and inter-order gap distributions.
+  - **Master Executive KPI Dashboard**: Cross-joins single-value subqueries to produce a comprehensive, single-screen KPI snapshot (total customers, active users, orders, revenue, AOV, top segment, top category, and repeat purchase rates).
 
 ---
 
@@ -256,36 +262,52 @@ This project showcases production-level SQL patterns:
 
 ---
 
-## 8. How to Execute the SQL Files
+## 8. How to Execute the SQL Files & Recommended Execution Order
 
-Run any analytical module directly from the MySQL command line:
+To reproduce all analytics and validation checks, execute the SQL files in the following logical sequence:
 
-```sql
-USE customer_analytics;
+### Recommended Execution Pipeline
 
--- 1. Execute Customer Segmentation Analysis (10 sections)
-SOURCE customer_segmentation.sql;
+1. **Phase 1: Database Initialization & Seeding**
+   * **Purpose**: Creates the schema, tables, constraints, and indexes, followed by seeding the baseline dataset.
+   ```sql
+   USE customer_analytics;
+   SOURCE database/schema.sql;
+   SOURCE database/sample_data.sql;
+   ```
 
--- 2. Execute Purchase Behavior Analysis (12 sections)
-SOURCE purchase_behavior.sql;
+2. **Phase 2: Data Quality & Integrity Validation (`data_quality_checks.sql`)**
+   * **Purpose**: Run immediately after seeding. Performs 30 diagnostic tests auditing primary/foreign key integrity, checking for duplicate customer profiles, verifying email domains, validating formula calculations (`total_amount`, `line_total`), and detecting date anomalies before any analytical reporting.
+   ```sql
+   SOURCE data_quality_checks.sql;
+   ```
 
--- 3. Execute Sales & Revenue Analysis (11 sections)
-SOURCE sales_analysis.sql;
+3. **Phase 3: Domain-Specific Analytical Deep-Dives**
+   * **Purpose**: Explores granular customer behavior, transaction telemetry, sales growth, retention cadences, and strategic accounts across five specialized analytical modules:
+   ```sql
+   -- Module 1: Customer Segmentation & Generational Demographics (10 sections)
+   SOURCE customer_segmentation.sql;
 
--- 4. Execute Customer Retention & Churn Analysis (8 sections)
-SOURCE customer_retention.sql;
+   -- Module 2: Purchase Dynamics, Basket Size & Category Affinities (12 sections)
+   SOURCE purchase_behavior.sql;
 
--- 5. Execute Business Insights & Strategic Reports (9 sections)
-SOURCE business_insights.sql;
+   -- Module 3: Sales Performance, Revenue Trends & Delivery SLAs (11 sections)
+   SOURCE sales_analysis.sql;
 
--- 6. Execute Data Quality & Integrity Validation (30 checks)
-SOURCE data_quality_checks.sql;
+   -- Module 4: Customer Retention, Cohort Matrix & Churn Risk (8 sections)
+   SOURCE customer_retention.sql;
 
--- 7. Execute Executive Business Summary & Master Dashboard (32 queries)
-SOURCE final_business_summary.sql;
-```
+   -- Module 5: Strategic Business Reports & Customer 360 Profiles (9 sections)
+   SOURCE business_insights.sql;
+   ```
 
-*Alternatively, open any of the `.sql` files in MySQL Workbench or DBeaver and run individual queries section by section.*
+4. **Phase 4: Executive Business Summary & Master Scorecard (`final_business_summary.sql`)**
+   * **Purpose**: The capstone executive synthesis. Consolidates findings across all business domains into 10 high-level KPI summaries and concludes with a single-screen Master Executive KPI Dashboard cross-joining all headline metrics for board-level reporting.
+   ```sql
+   SOURCE final_business_summary.sql;
+   ```
+
+*Alternatively, open any of the `.sql` files in MySQL Workbench, DBeaver, or VS Code SQLTools and execute individual queries section by section.*
 
 ---
 
