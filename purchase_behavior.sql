@@ -13,6 +13,9 @@
 --             7. Monthly Purchase Patterns & Seasonal Sales Velocity
 --             8. Customers with the Highest Purchase Frequency (Power Buyers)
 --             9. Customers Who Have Not Purchased Recently (Recency & Churn Risk)
+--            10. Cross-Category Product Affinity (Market Basket Analysis)
+--            11. Basket Size & Multi-Item Order Distribution
+--            12. Payment Method Preferences & Gateway Transaction Reliability
 --
 -- CONCEPTS: SELECT, JOIN, GROUP BY, HAVING, Subqueries, CASE statements,
 --           Common Table Expressions (CTEs), Window Functions (ROW_NUMBER,
@@ -482,3 +485,121 @@ ORDER BY days_since_last_purchase DESC;
 -- Surfaces all customers requiring re-activation (e.g. Vikram Singh, Suresh Pillai,
 -- Shruti Jain, Ananya Das inactive for 100+ to 400+ days).
 -- Assigns an automated retention strategy for each tier.
+
+
+-- =============================================================================
+-- SECTION 10: CROSS-CATEGORY PRODUCT AFFINITY (MARKET BASKET ANALYSIS)
+-- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- BUSINESS QUESTION 10:
+-- Which product categories are most frequently purchased together in the same order?
+-- Identify top cross-selling category pairs using a self-join to reveal co-purchase
+-- affinity across all completed customer orders.
+-- -----------------------------------------------------------------------------
+
+WITH order_categories AS (
+    SELECT DISTINCT 
+        oi.order_id,
+        c.category_id,
+        c.category_name
+    FROM order_items oi
+    JOIN products p ON oi.product_id = p.product_id
+    JOIN categories c ON p.category_id = c.category_id
+)
+SELECT 
+    oc1.category_name AS primary_category,
+    oc2.category_name AS co_purchased_category,
+    COUNT(DISTINCT oc1.order_id) AS co_purchase_frequency,
+    DENSE_RANK() OVER (ORDER BY COUNT(DISTINCT oc1.order_id) DESC) AS affinity_rank
+FROM order_categories oc1
+JOIN order_categories oc2 
+    ON oc1.order_id = oc2.order_id 
+   AND oc1.category_id < oc2.category_id -- Avoid duplicate mirrors and self-pairs
+GROUP BY oc1.category_name, oc2.category_name
+ORDER BY co_purchase_frequency DESC, primary_category ASC
+LIMIT 10;
+
+-- EXPECTED OUTPUT DESCRIPTION:
+-- Reveals strong co-purchasing affinity between Electronics & Beauty, Books & Grocery,
+-- and Clothing & Beauty, useful for bundle promotions and cross-sell recommendation engines.
+
+
+-- =============================================================================
+-- SECTION 11: BASKET SIZE & MULTI-ITEM ORDER DISTRIBUTION
+-- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- BUSINESS QUESTION 11:
+-- What proportion of orders are single-item transactions vs multi-item baskets?
+-- How does basket depth affect average order value and promotional discount impact?
+-- -----------------------------------------------------------------------------
+
+WITH order_basket_summary AS (
+    SELECT 
+        o.order_id,
+        o.total_amount,
+        o.discount_amount,
+        COUNT(oi.order_item_id) AS distinct_skus_count,
+        SUM(oi.quantity) AS total_units_bought
+    FROM orders o
+    JOIN order_items oi ON o.order_id = oi.order_id
+    GROUP BY o.order_id, o.total_amount, o.discount_amount
+),
+basket_brackets AS (
+    SELECT 
+        order_id,
+        total_amount,
+        discount_amount,
+        total_units_bought,
+        CASE 
+            WHEN total_units_bought = 1 THEN '1 Unit (Single Item)'
+            WHEN total_units_bought = 2 THEN '2 Units (Double)'
+            WHEN total_units_bought BETWEEN 3 AND 4 THEN '3-4 Units (Medium Basket)'
+            ELSE '5+ Units (Large Bulk Basket)'
+        END AS basket_size_bracket
+    FROM order_basket_summary
+)
+SELECT 
+    basket_size_bracket,
+    COUNT(*) AS total_orders,
+    ROUND((COUNT(*) * 100.0) / (SELECT COUNT(*) FROM orders), 2) AS pct_of_all_orders,
+    CONCAT('₹', FORMAT(AVG(total_amount), 2)) AS avg_order_amount,
+    CONCAT('₹', FORMAT(SUM(total_amount), 2)) AS total_revenue_generated,
+    CONCAT('₹', FORMAT(AVG(discount_amount), 2)) AS avg_discount_given
+FROM basket_brackets
+GROUP BY basket_size_bracket
+ORDER BY total_orders DESC;
+
+-- EXPECTED OUTPUT DESCRIPTION:
+-- Classifies orders by item depth, highlighting that multi-item baskets generate higher
+-- AOV and show where promotional volume discounts are concentrated.
+
+
+-- =============================================================================
+-- SECTION 12: PAYMENT METHOD PREFERENCES & GATEWAY TRANSACTION RELIABILITY
+-- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- BUSINESS QUESTION 12:
+-- Which payment methods demonstrate the highest adoption, ticket size, and success rates?
+-- Are high-value orders predominantly paid via EMI or Credit Card vs UPI for everyday baskets?
+-- -----------------------------------------------------------------------------
+
+SELECT 
+    p.method AS payment_method,
+    COUNT(p.payment_id) AS total_transactions,
+    ROUND((COUNT(p.payment_id) * 100.0) / (SELECT COUNT(*) FROM payments), 2) AS transaction_share_pct,
+    CONCAT('₹', FORMAT(SUM(p.amount), 2)) AS total_processed_value,
+    CONCAT('₹', FORMAT(AVG(p.amount), 2)) AS avg_transaction_value,
+    SUM(CASE WHEN p.status = 'Captured' THEN 1 ELSE 0 END) AS successful_payments,
+    SUM(CASE WHEN p.status = 'Pending' THEN 1 ELSE 0 END) AS pending_payments,
+    SUM(CASE WHEN p.status = 'Refunded' THEN 1 ELSE 0 END) AS refunded_payments,
+    ROUND((SUM(CASE WHEN p.status = 'Captured' THEN 1 ELSE 0 END) * 100.0) / COUNT(p.payment_id), 1) AS success_rate_pct
+FROM payments p
+GROUP BY p.method
+ORDER BY total_processed_value DESC;
+
+-- EXPECTED OUTPUT DESCRIPTION:
+-- Demonstrates that Credit Card and EMI handle the majority of high-ticket transaction
+-- volume (> ₹50,000), while UPI and COD drive high-frequency everyday purchases (< ₹10,000).

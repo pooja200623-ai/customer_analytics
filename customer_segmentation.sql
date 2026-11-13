@@ -12,6 +12,8 @@
 --             6. Low-Value Customers (Low basket size / bottom spending tier)
 --             7. Inactive Customers (Lapsed accounts / high days since last order)
 --             8. Master Comprehensive Multi-Tier Customer Segmentation Matrix
+--             9. Demographic Segmentation by Age Group & Gender Cohorts
+--            10. Geographic Segmentation & Market Penetration (State & City CLV)
 --
 -- CONCEPTS: JOIN, GROUP BY, HAVING, CASE statements, Subqueries, CTEs,
 --           Window Functions (ROW_NUMBER, DENSE_RANK, NTILE, PERCENT_RANK, AVG OVER)
@@ -475,3 +477,88 @@ ORDER BY total_spending DESC;
 -- A complete, executive-ready master table classifying all 30 customers into their
 -- strategic segment. Seamlessly unites purchase frequency, total monetary spend,
 -- recency of purchase, and loyalty status into a single view.
+
+
+-- =============================================================================
+-- SECTION 9: DEMOGRAPHIC SEGMENTATION BY AGE GROUP & GENDER COHORTS
+-- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- BUSINESS QUESTION 9:
+-- How does average order value (AOV), total order frequency, and gross revenue
+-- vary across generational age demographics (<25 Gen Z, 25-34 Millennials,
+-- 35-44 Young Gen X, 45+ Mature Customers) and gender cohorts?
+-- -----------------------------------------------------------------------------
+
+WITH customer_demographics AS (
+    SELECT 
+        c.customer_id,
+        c.gender,
+        TIMESTAMPDIFF(YEAR, c.date_of_birth, '2026-11-10') AS age,
+        CASE 
+            WHEN TIMESTAMPDIFF(YEAR, c.date_of_birth, '2026-11-10') < 25 THEN '1. Under 25 (Gen Z)'
+            WHEN TIMESTAMPDIFF(YEAR, c.date_of_birth, '2026-11-10') BETWEEN 25 AND 34 THEN '2. 25-34 (Millennials)'
+            WHEN TIMESTAMPDIFF(YEAR, c.date_of_birth, '2026-11-10') BETWEEN 35 AND 44 THEN '3. 35-44 (Young Gen X)'
+            ELSE '4. 45+ (Mature Customers)'
+        END AS age_cohort,
+        o.order_id,
+        o.total_amount
+    FROM customers c
+    LEFT JOIN orders o ON c.customer_id = o.customer_id
+)
+SELECT 
+    age_cohort,
+    gender,
+    COUNT(DISTINCT customer_id) AS total_customers,
+    COUNT(DISTINCT order_id) AS total_orders,
+    CONCAT('₹', FORMAT(COALESCE(SUM(total_amount), 0), 2)) AS gross_revenue,
+    CONCAT('₹', FORMAT(COALESCE(AVG(total_amount), 0), 2)) AS avg_order_value,
+    ROUND(COUNT(DISTINCT order_id) / NULLIF(COUNT(DISTINCT customer_id), 0), 2) AS orders_per_customer
+FROM customer_demographics
+GROUP BY age_cohort, gender
+ORDER BY age_cohort ASC, gross_revenue DESC;
+
+-- EXPECTED OUTPUT DESCRIPTION:
+-- Summarizes purchasing power by age group and gender. Demonstrates that Millennials
+-- (25-34) and Gen X (35-44) generate the highest average ticket size (AOV).
+
+
+-- =============================================================================
+-- SECTION 10: GEOGRAPHIC SEGMENTATION & MARKET PENETRATION
+-- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- BUSINESS QUESTION 10:
+-- Which Indian states and metro cities exhibit the highest customer concentration,
+-- highest aggregate sales volume, and best customer lifetime value (CLV)?
+-- Rank all active commercial territories by total revenue.
+-- -----------------------------------------------------------------------------
+
+WITH geo_analytics AS (
+    SELECT 
+        c.state,
+        c.city,
+        COUNT(DISTINCT c.customer_id) AS total_customers,
+        COUNT(DISTINCT o.order_id) AS total_orders,
+        COALESCE(SUM(o.total_amount), 0) AS total_sales,
+        COALESCE(AVG(o.total_amount), 0) AS aov,
+        COALESCE(SUM(o.total_amount) / NULLIF(COUNT(DISTINCT c.customer_id), 0), 0) AS avg_customer_value
+    FROM customers c
+    LEFT JOIN orders o ON c.customer_id = o.customer_id
+    GROUP BY c.state, c.city
+)
+SELECT 
+    state,
+    city,
+    total_customers,
+    total_orders,
+    CONCAT('₹', FORMAT(total_sales, 2)) AS total_sales,
+    CONCAT('₹', FORMAT(aov, 2)) AS avg_order_value,
+    CONCAT('₹', FORMAT(avg_customer_value, 2)) AS customer_lifetime_value,
+    DENSE_RANK() OVER (ORDER BY total_sales DESC) AS sales_rank_by_city
+FROM geo_analytics
+ORDER BY total_sales DESC;
+
+-- EXPECTED OUTPUT DESCRIPTION:
+-- Ranks cities like Ahmedabad, Bengaluru, Mumbai, Chennai, and Gurugram by total sales,
+-- highlighting regional clusters of high-net-worth customers and geographic penetration.

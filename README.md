@@ -20,12 +20,15 @@ An end-to-end, portfolio-ready data analytics project built entirely with **MySQ
    - [Sales Analysis](#module-3-sales-analysis-sales_analysissql)
    - [Customer Retention Analysis](#module-4-customer-retention-analysis-customer_retentionsql)
    - [Business Insights & Reports](#module-5-business-insights--reports-business_insightssql)
+   - [Data Quality & Integrity Validation](#module-6-data-quality--integrity-validation-data_quality_checkssql)
+   - [Executive Business Summary](#module-7-executive-business-summary-final_business_summarysql)
 6. [SQL Concepts & Techniques Demonstrated](#6-sql-concepts--techniques-demonstrated)
 7. [Database Setup Instructions](#7-database-setup-instructions)
 8. [How to Execute the SQL Files](#8-how-to-execute-the-sql-files)
 9. [Sample Business Questions Answered](#9-sample-business-questions-answered)
 10. [Key Project Outcomes & Findings](#10-key-project-outcomes--findings)
 11. [Repository Organization](#11-repository-organization)
+12. [Project Audit & Quality Assurance](#12-project-audit--quality-assurance)
 
 ---
 
@@ -35,22 +38,24 @@ In today's competitive e-commerce landscape, understanding customer behavior is 
 
 This project designs a normalized **MySQL relational database** and implements business intelligence queries covering:
 - **RFM Customer Segmentation** (Recency, Frequency, Monetary value modeling)
-- **Basket Size & Order Depth Dynamics**
+- **Basket Size, Depth & Market Basket Affinity** (Co-purchase self-joins)
 - **Period-over-Period (MoM, QoQ, YoY) Revenue Growth**
 - **Customer Lifecycle & Cohort Retention Matrices**
 - **Product Category Profitability & Top SKU Velocity**
-- **Proactive Churn Prevention Alerts**
+- **Comprehensive Data Quality Validation Suite**
+- **Single-Screen Executive KPI Dashboard & Customer 360 Profile**
 
 ---
 
 ## 2. Project Objectives
 
 - **Database Architecture**: Design a normalized, relational database schema (3NF) with primary keys, foreign keys, cascades, and check constraints.
-- **Customer Segmentation**: Segment customers into actionable cohorts (New, Returning, Loyal, High-Value, Low-Value, Inactive) using statistical quartiles.
-- **Purchase Behavior Modeling**: Analyze basket composition, re-order time gaps, payment preferences, and cross-category affinities.
-- **Sales Performance Tracking**: Calculate Gross Merchandise Value (GMV), net revenue, discounts, shipping fees, taxes, and category margins.
-- **Retention & Churn Tracking**: Build cohort matrices to evaluate customer attrition over rolling monthly intervals.
-- **Actionable Business Intelligence**: Formulate data-driven answers to real-world commercial questions for marketing, supply chain, and executive teams.
+- **Customer Segmentation**: Segment customers into actionable cohorts (New, Returning, Loyal, High-Value, Low-Value, Inactive) using statistical quartiles, age demographics, and geographic market penetration.
+- **Purchase Behavior Modeling**: Analyze basket composition, re-order time gaps, payment gateway success rates, and cross-category affinities using market basket self-joins.
+- **Sales Performance Tracking**: Calculate Gross Merchandise Value (GMV), net revenue, discounts, shipping fees, taxes, delivery SLAs, and category profit margins.
+- **Retention & Churn Tracking**: Build cohort matrices to evaluate customer attrition over rolling monthly intervals and identify reactivated win-backs.
+- **Data Quality & Governance**: Execute a 30-check audit suite to detect duplicates, orphaned records, pricing anomalies, and date discrepancies.
+- **Actionable Business Intelligence**: Formulate data-driven answers to real-world commercial questions for marketing, supply chain, and executive leadership.
 
 ---
 
@@ -93,7 +98,7 @@ categories (10 rows)
 
 ## 5. Project Modules
 
-The analytical queries are organized into separate files:
+The analytical queries are organized into distinct, production-ready modules:
 
 ### Module 1: Customer Segmentation (`customer_segmentation.sql`)
 - **Purchasing History Summary**: Computes total orders, lifetime expenditure, AOV, and days since last purchase for every customer.
@@ -104,9 +109,11 @@ The analytical queries are organized into separate files:
 - **Low-Value Customers (LVCs)**: Evaluates the bottom quartile of spenders for basket expansion.
 - **Inactive & At-Risk Customers**: Detects churn risks with $> 120$ days of dormancy.
 - **Master Unified Segmentation Matrix**: Synthesizes recency, frequency, and spend into a unified executive tier.
+- **Demographic Segmentation**: Analyzes AOV, order volume, and revenue across generational cohorts (Gen Z, Millennials, Young Gen X, Mature) and gender.
+- **Geographic Segmentation & Market Penetration**: Ranks metro cities and states by customer concentration, sales, and Customer Lifetime Value (CLV).
 
 ### Module 2: Purchase Behavior Analysis (`purchase_behavior.sql`)
-- **Customer Purchasing Profile**: Comprehensive audit of customer orders, spend, item depth, and active tenure.
+- **Customer Purchasing Profile**: Comprehensive audit of customer orders, spend, item depth, and active tenure using pre-aggregated CTEs (join fan-out safe).
 - **Frequently Purchased Products**: Ranks top products by physical unit velocity, distinct orders, and revenue.
 - **Purchase Frequency Distribution**: Classifies customer base into Single-Purchase, Occasional, Frequent, and Power Buyers.
 - **Total Spending & Revenue Concentration**: Calculates individual revenue contribution and running cumulative GMV.
@@ -115,10 +122,13 @@ The analytical queries are organized into separate files:
 - **Monthly Purchase Patterns**: Analyzes seasonal order volume fluctuations, active buyer counts, and MoM growth.
 - **Highest Purchase Frequency**: Evaluates power shoppers ($\ge 3$ orders) and calculates average days between successive orders.
 - **Recency & Churn Alerts**: Categorizes customers inactive for $> 90$, $> 150$, or $> 240$ days with targeted CRM re-engagement actions.
+- **Cross-Category Product Affinity (Market Basket Analysis)**: Utilizes a self-join to reveal top product category pairs purchased together in the same transaction.
+- **Basket Size & Multi-Item Order Distribution**: Classifies orders into Single Item, Double, Medium, and Large Bulk baskets.
+- **Payment Method Preferences & Gateway Reliability**: Analyzes transaction share, average ticket size, and success/refund rates across UPI, Credit Card, EMI, COD, and Net Banking.
 
 ### Module 3: Sales Analysis (`sales_analysis.sql`)
 - **Total Sales Revenue**: Complete audit of gross merchandise subtotal, net collected sales, discounts, taxes, and shipping fees.
-- **Daily Sales Trends**: Analyzes daily sales velocity and calculates a 7-day rolling moving average of daily revenue.
+- **Daily Sales Trends**: Analyzes daily sales velocity and calculates rolling moving averages.
 - **Monthly Trajectory**: Evaluates month-by-month sales trajectory and Month-over-Month (MoM) growth rates.
 - **Yearly Sales Performance**: Compares 2025 vs 2026 performance, computing Year-over-Year (YoY) revenue and order expansion.
 - **Top-Selling Products by Volume**: Identifies fast-moving catalog SKUs by unit velocity.
@@ -127,6 +137,7 @@ The analytical queries are organized into separate files:
 - **AOV Dynamics**: Breaks down average order value across customer loyalty tiers and top geographic states.
 - **Best-Performing Sales Months**: Ranks calendar months using statistical quartiles (`NTILE`) to identify peak demand seasons.
 - **Period-over-Period Performance**: Measures quarterly business expansion (Q1 2025 &rarr; Q4 2026) with QoQ revenue changes.
+- **Order Fulfillment & Delivery SLA Performance**: Tracks order status breakdown and evaluates on-time delivery SLA compliance rates.
 
 ### Module 4: Customer Retention Analysis (`customer_retention.sql`)
 - **Repeat Customers**: Details multi-order customer lifespans, order counts, and total spend.
@@ -147,6 +158,29 @@ The analytical queries are organized into separate files:
 - **Day-of-Week Purchasing Trends**: Identifies optimal days of the week for sales conversion and average basket sizes.
 - **Inactive High-Value Customers**: Urgent churn alerts for VIP accounts ($> ₹50,000$ spend or Platinum/Gold) inactive for $> 90$ days.
 - **Executive KPI Scorecard**: Single-row C-level summary capturing active buyer conversion, net revenue, discounts, AOV, and ARPU.
+- **Complete Customer 360 Lifetime Profile**: Single view of customer synthesizing demographics, loyalty tier, lifetime spend, preferred category, payment method, and recency.
+
+### Module 6: Data Quality & Integrity Validation (`data_quality_checks.sql`)
+- **Duplicate Customer Records**: Audits duplicate emails, full names, and phone numbers.
+- **NULL & Missing Value Audits**: Systematically checks required fields across customers, products, orders, and payments.
+- **Email Format Validation**: Flags non-conformant email syntax and analyzes domain distribution.
+- **Duplicate Transactions**: Identifies same-customer same-day orders and exact financial duplicates.
+- **Referential Integrity & Orphan Records**: Verifies foreign key alignment (orphaned order items, missing customers, missing products).
+- **Amount & Price Reconciliation**: Mathematical formula validation for `orders.total_amount` and `order_items.line_total`.
+- **Date Logic Audits**: Checks future-dated orders, deliveries before order dates, and birth date anomalies.
+- **Consolidated Data Quality Dashboard**: Single-view diagnostic scorecard reporting issue counts across all tables.
+
+### Module 7: Executive Business Summary (`final_business_summary.sql`)
+- **Audience Metrics**: Total registered accounts, annual registration cohorts, and active/inactive user splits.
+- **Order Volume**: Orders per year, status breakdown, and fulfillment velocity.
+- **Revenue Overview**: Gross vs net revenue, order status revenue impact, and state contribution.
+- **AOV Dynamics**: Overall AOV, segment AOV, and ticket size by payment gateway.
+- **VIP Accounts**: Top 5 spenders with deep category purchase breakdowns.
+- **Product Champions**: Top 5 SKUs by volume and revenue, with full catalog sales rankings.
+- **Category Margins**: Departmental revenue, COGS, gross profit, and profit margin percentages.
+- **Segment Demographics**: Geographic concentration of top-tier accounts.
+- **Retention Milestones**: Single vs repeat purchase rates and inter-order gap distributions.
+- **Master Executive KPI Dashboard**: Cross-joined executive summary table providing all headline metrics in a single board-level query.
 
 ---
 
@@ -156,9 +190,9 @@ This project showcases production-level SQL patterns:
 
 - **Complex JOINs**: Multi-table `INNER JOIN`, `LEFT JOIN`, self-joins for co-purchase basket analysis, and `CROSS JOIN` for summary totals.
 - **Aggregation & Filtering**: Multi-column `GROUP BY`, `HAVING` filters, `COUNT(DISTINCT ...)`, and mathematical rounding (`ROUND`, `FORMAT`).
-- **Common Table Expressions (CTEs)**: Multi-stage pipelines for modular, readable query structures.
+- **Common Table Expressions (CTEs)**: Multi-stage pipelines and pre-aggregated CTEs to eliminate join fan-outs.
 - **Window Functions**:
-  - `ROW_NUMBER()`: Ranking category preferences per customer
+  - `ROW_NUMBER()`: Ranking category preferences and sequential order intervals
   - `DENSE_RANK()`: Ranking top spenders, SKUs, and performance periods without skipping ranks
   - `NTILE(4)`: Dividing customers and sales months into statistical quartiles
   - `PERCENT_RANK()`: Calculating cumulative percentile distribution of customer spend
@@ -229,23 +263,29 @@ Run any analytical module directly from the MySQL command line:
 ```sql
 USE customer_analytics;
 
--- 1. Execute Customer Segmentation Analysis
+-- 1. Execute Customer Segmentation Analysis (10 sections)
 SOURCE customer_segmentation.sql;
 
--- 2. Execute Purchase Behavior Analysis
+-- 2. Execute Purchase Behavior Analysis (12 sections)
 SOURCE purchase_behavior.sql;
 
--- 3. Execute Sales & Revenue Analysis
+-- 3. Execute Sales & Revenue Analysis (11 sections)
 SOURCE sales_analysis.sql;
 
--- 4. Execute Customer Retention & Churn Analysis
+-- 4. Execute Customer Retention & Churn Analysis (8 sections)
 SOURCE customer_retention.sql;
 
--- 5. Execute Business Insights & Executive Reports
+-- 5. Execute Business Insights & Strategic Reports (9 sections)
 SOURCE business_insights.sql;
+
+-- 6. Execute Data Quality & Integrity Validation (30 checks)
+SOURCE data_quality_checks.sql;
+
+-- 7. Execute Executive Business Summary & Master Dashboard (32 queries)
+SOURCE final_business_summary.sql;
 ```
 
-*Alternatively, open any of the `.sql` files in MySQL Workbench or DBeaver and run the individual queries section by section.*
+*Alternatively, open any of the `.sql` files in MySQL Workbench or DBeaver and run individual queries section by section.*
 
 ---
 
@@ -258,27 +298,29 @@ SOURCE business_insights.sql;
 | **3** | *How does Average Order Value (AOV) vary across customer loyalty tiers?* | `sales_analysis.sql` | `JOIN`, `GROUP BY`, `DENSE_RANK()` |
 | **4** | *Which high-value customers have not purchased in over 90 days and require win-back action?* | `business_insights.sql` | `JOIN`, `DATEDIFF`, `CASE` |
 | **5** | *What is the average time gap (in days) between a customer's 1st, 2nd, 3rd, and 4th orders?* | `customer_retention.sql` | `ROW_NUMBER()`, `LAG()`, `AVG()` |
-| **6** | *Which product categories generate the highest gross revenue and profit margins?* | `sales_analysis.sql` | `JOIN`, `GROUP BY`, `DENSE_RANK()` |
+| **6** | *Which product categories generate the highest gross revenue and profit margins?* | `final_business_summary.sql` | `JOIN`, `GROUP BY`, `DENSE_RANK()` |
 | **7** | *How does Month-over-Month (MoM) revenue growth compare across operational months?* | `sales_analysis.sql` | `CTE`, `DATE_FORMAT()`, `LAG()` |
 | **8** | *What are the most frequent cross-category product co-purchases in a single order?* | `purchase_behavior.sql` | `Self JOIN`, `COUNT(DISTINCT)` |
+| **9** | *How does purchasing power and AOV break down across generational age brackets and gender?* | `customer_segmentation.sql` | `CASE`, `TIMESTAMPDIFF`, `GROUP BY` |
+| **10** | *How do on-time delivery rates compare across carrier fulfillment SLAs?* | `sales_analysis.sql` | `CASE`, `SUM`, `ROUND` |
 
 ---
 
 ## 10. Key Project Outcomes & Findings
 
-1. **80/20 Revenue Concentration**:
+1. **Revenue Concentration (Pareto Principle)**:
    - The top **25% of customers** account for over **55% of total gross merchandise value (GMV)**.
-   - The top 10 spenders generated **₹15,28,499.00 out of ₹18,81,872.00 total revenue (81.22%)**.
+   - The top 10 spenders generated **₹16,26,965.00 out of ₹18,81,872.00 total platform revenue (86.45%)**, led by Karan Malhotra (₹3,54,847.00) and Varun Kapoor (₹2,41,889.00).
 
 2. **Customer Retention Health**:
    - Out of 29 converted buyers, **19 customers returned for repeat purchases**, yielding a **65.52% repeat buyer retention rate**.
-   - Repeat buyers have an average lifetime spend that is **5.4x higher** than one-time buyers.
+   - Repeat buyers generate **98.4% of total company revenue**, with an average lifetime spend of **₹97,440.74** compared to ₹3,049.80 for one-time buyers (**31.95x higher**).
 
-3. **Accelerating Purchase Cadence**:
-   - The average interval between Order 1 and Order 2 is **~238 days**, but between Order 2 and Order 3 it shrinks to **~154 days**, and between Order 3 and Order 4 it drops to **~80 days**, indicating accelerating customer habituation.
+3. **Purchase Cadence & Habituation Dynamics**:
+   - The average interval between Order 1 and Order 2 is **342.7 days**, but between Order 2 and Order 3 it contracts significantly to **152.4 days**, and between Order 3 and Order 4 it drops to **116.0 days**, illustrating that once a customer becomes a repeat purchaser, their re-order cycle accelerates.
 
 4. **Category Revenue Dominance**:
-   - **Electronics** represents the primary GMV driver (**> 63% of total revenue**), while **Jewellery** and **Home & Kitchen** generate steady high-ticket purchases. Everyday consumables (**Grocery & Food**, **Beauty**) drive repeat frequency.
+   - **Electronics** represents the primary GMV driver (**₹12,20,871.00**, representing **68.35% of total catalog sales**), followed by **Home & Kitchen** (₹1,49,776.00 ~ 8.38%) and **Jewellery** (₹1,43,996.00 ~ 8.06%). Everyday consumables (**Grocery & Food**, **Beauty**) drive repeat frequency.
 
 5. **Actionable Churn Mitigation**:
    - Identified 3 high-value accounts (Meera Iyer: ₹1.71L spend; Sneha Kulkarni: ₹90K spend; Deepak Kumar: ₹63K spend) entering moderate dormancy ($> 90$ days), enabling targeted win-back campaigns prior to complete churn.
@@ -290,17 +332,30 @@ SOURCE business_insights.sql;
 ```
 customer_analytics/
 ├── database/
-│   ├── schema.sql              # DDL: Table creation, constraints, foreign keys, indexes
-│   └── sample_data.sql         # DML: Seed dataset with realistic e-commerce records
+│   ├── schema.sql                 # DDL: Table creation, constraints, foreign keys, indexes
+│   └── sample_data.sql            # DML: Seed dataset with realistic e-commerce records
 │
-├── customer_segmentation.sql   # Module 1: Comprehensive customer segmentation queries
-├── purchase_behavior.sql       # Module 2: Purchasing patterns, basket size & frequency queries
-├── sales_analysis.sql          # Module 3: Revenue trends, top SKUs, category & period comparisons
-├── customer_retention.sql      # Module 4: Retention rates, churn modeling & cohort matrices
-├── business_insights.sql       # Module 5: Executive KPI scorecards & strategic commercial reports
+├── customer_segmentation.sql      # Module 1: RFM tiers, new/repeat/loyal cohorts, demographics & geo CLV
+├── purchase_behavior.sql          # Module 2: AOV profiling, market basket self-joins, SKU velocity & gateways
+├── sales_analysis.sql             # Module 3: Daily moving averages, MoM/YoY growth, category margins & SLA
+├── customer_retention.sql         # Module 4: Retention rates, churn modeling, cadence & monthly cohort grid
+├── business_insights.sql          # Module 5: VIP spenders, demand drivers, weekday trends & Customer 360
+├── data_quality_checks.sql        # Module 6: 30 diagnostic tests auditing nulls, orphans, duplicates & math
+├── final_business_summary.sql     # Module 7: 10 executive KPI modules & Master Executive Dashboard
 │
-└── README.md                   # Project documentation & GitHub portfolio showcase
+├── FINAL_AUDIT_REPORT.md          # Comprehensive technical audit, data reconciliation & portfolio review
+└── README.md                      # Project documentation & GitHub portfolio showcase
 ```
+
+---
+
+## 12. Project Audit & Quality Assurance
+
+This repository includes a formal technical audit and code review documented in [`FINAL_AUDIT_REPORT.md`](FINAL_AUDIT_REPORT.md). The audit details:
+- Complete file-by-file review across all SQL scripts.
+- Analysis of SQL aggregation mechanics and pre-aggregated CTE patterns to prevent join fan-out.
+- Financial reconciliation between order headers, line items, and payment transactions.
+- Portfolio readiness evaluation and production best practices.
 
 ---
 
@@ -310,4 +365,4 @@ customer_analytics/
 - **Database Engine**: MySQL 8.0+
 - **Domain**: E-Commerce & Retail Business Intelligence (BI)
 
-*Designed and engineered for a cleaner, fresher, and production-oriented SQL analytics portfolio.*
+*Designed and engineered for a clean, rigorous, and production-oriented SQL analytics portfolio.*

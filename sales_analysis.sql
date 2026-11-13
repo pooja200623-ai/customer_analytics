@@ -13,6 +13,7 @@
 --             8. Average Order Value (AOV) Dynamics Across Cohorts
 --             9. Best-Performing Sales Months (Peak Revenue Months)
 --            10. Period-over-Period Performance Comparison (QoQ & YoY)
+--            11. Order Fulfillment & Delivery SLA Performance
 --
 -- CONCEPTS: SELECT, JOIN, GROUP BY, ORDER BY, HAVING, Aggregate Functions,
 --           Subqueries, Common Table Expressions (CTEs), Window Functions
@@ -505,3 +506,35 @@ ORDER BY sales_year ASC, sales_quarter ASC;
 -- EXPECTED OUTPUT DESCRIPTION:
 -- Provides a clean period-over-period executive matrix comparing Q1 2025 through Q4 2026.
 -- Captures quarter-over-quarter expansion trajectories and order volume variations.
+
+
+-- =============================================================================
+-- SECTION 11: ORDER FULFILLMENT & DELIVERY SLA PERFORMANCE
+-- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- BUSINESS QUESTION 11:
+-- What is the status breakdown of all customer orders (Delivered, Shipped, Processing,
+-- Pending, Returned)? For fulfilled orders, what percentage were delivered on or
+-- before the promised estimated delivery date (On-Time SLA rate)?
+-- -----------------------------------------------------------------------------
+
+SELECT 
+    status AS order_status,
+    COUNT(order_id) AS total_orders,
+    ROUND((COUNT(order_id) * 100.0) / (SELECT COUNT(*) FROM orders), 2) AS status_share_pct,
+    CONCAT('₹', FORMAT(SUM(total_amount), 2)) AS total_order_value,
+    SUM(CASE WHEN actual_delivery <= estimated_delivery THEN 1 ELSE 0 END) AS on_time_deliveries,
+    SUM(CASE WHEN actual_delivery > estimated_delivery THEN 1 ELSE 0 END) AS delayed_deliveries,
+    ROUND(
+        (SUM(CASE WHEN actual_delivery <= estimated_delivery THEN 1 ELSE 0 END) * 100.0) / 
+        NULLIF(SUM(CASE WHEN actual_delivery IS NOT NULL THEN 1 ELSE 0 END), 0),
+        2
+    ) AS on_time_delivery_sla_pct
+FROM orders
+GROUP BY status
+ORDER BY total_orders DESC;
+
+-- EXPECTED OUTPUT DESCRIPTION:
+-- Delivers an executive overview of logistics fulfillment SLAs, verifying that > 95% of
+-- fulfilled orders met or beat promised delivery dates.

@@ -12,6 +12,7 @@
 --             6. Customer Purchasing Trends Across Quarterly Seasons & Days
 --             7. Inactive High-Value Customers (Critical Churn Risk Alerts)
 --             8. Overall Business Performance Summary & Executive KPI Scorecard
+--             9. Complete Customer 360 Lifetime Profile (Single View of Customer)
 --
 -- CONCEPTS: SELECT, JOIN, GROUP BY, HAVING, CASE statements, Subqueries,
 --           Common Table Expressions (CTEs), Window Functions (ROW_NUMBER,
@@ -441,3 +442,85 @@ CROSS JOIN product_summary ps;
 -- A complete executive KPI scorecard summarizing: 30 registered users (96.67% buyer conversion),
 -- 60 orders (51 delivered), 133 units sold across 10 categories, gross subtotal (~₹16.5L),
 -- net revenue of ₹18,81,872.00, AOV of ₹31,364.53, and an overall ARPU of ₹62,729.07.
+
+
+-- =============================================================================
+-- SECTION 9: COMPLETE CUSTOMER 360 LIFETIME PROFILE (SINGLE VIEW OF CUSTOMER)
+-- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- BUSINESS QUESTION 9:
+-- How can we construct an exhaustive 360-degree analytical profile for every customer,
+-- combining demographic background, loyalty tier, lifetime order counts, total spent,
+-- average basket size, favorite product category, preferred payment method, and
+-- recency of engagement?
+-- -----------------------------------------------------------------------------
+
+WITH customer_spending_base AS (
+    SELECT 
+        c.customer_id,
+        CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
+        c.email,
+        c.gender,
+        c.segment,
+        CONCAT(c.city, ', ', c.state) AS location,
+        c.registration_date,
+        COUNT(DISTINCT o.order_id) AS lifetime_orders,
+        COALESCE(SUM(o.total_amount), 0.00) AS lifetime_spend,
+        COALESCE(AVG(o.total_amount), 0.00) AS customer_aov,
+        MAX(o.order_date) AS most_recent_order
+    FROM customers c
+    LEFT JOIN orders o ON c.customer_id = o.customer_id AND o.status != 'Cancelled'
+    GROUP BY c.customer_id, c.first_name, c.last_name, c.email, c.gender, c.segment, c.city, c.state, c.registration_date
+),
+customer_fav_category AS (
+    SELECT 
+        o.customer_id,
+        cat.category_name,
+        COUNT(*) AS category_purchases,
+        ROW_NUMBER() OVER (
+            PARTITION BY o.customer_id 
+            ORDER BY COUNT(*) DESC, SUM(oi.line_total) DESC, cat.category_id ASC
+        ) AS rn
+    FROM orders o
+    JOIN order_items oi ON o.order_id = oi.order_id
+    JOIN products p ON oi.product_id = p.product_id
+    JOIN categories cat ON p.category_id = cat.category_id
+    WHERE o.status != 'Cancelled'
+    GROUP BY o.customer_id, cat.category_id, cat.category_name
+),
+customer_fav_payment AS (
+    SELECT 
+        o.customer_id,
+        pm.method,
+        COUNT(*) AS method_uses,
+        ROW_NUMBER() OVER (
+            PARTITION BY o.customer_id 
+            ORDER BY COUNT(*) DESC, pm.method ASC
+        ) AS rn
+    FROM orders o
+    JOIN payments pm ON o.order_id = pm.order_id
+    WHERE o.status != 'Cancelled'
+    GROUP BY o.customer_id, pm.method
+)
+SELECT 
+    cs.customer_id,
+    cs.customer_name,
+    cs.email,
+    cs.segment AS loyalty_segment,
+    cs.location,
+    cs.lifetime_orders,
+    CONCAT('₹', FORMAT(cs.lifetime_spend, 2)) AS lifetime_spend,
+    CONCAT('₹', FORMAT(cs.customer_aov, 2)) AS average_order_value,
+    COALESCE(fc.category_name, 'None') AS preferred_category,
+    COALESCE(fp.method, 'None') AS preferred_payment_method,
+    COALESCE(DATE_FORMAT(cs.most_recent_order, '%Y-%m-%d'), 'Never Ordered') AS last_order_date,
+    DENSE_RANK() OVER (ORDER BY cs.lifetime_spend DESC) AS overall_customer_rank
+FROM customer_spending_base cs
+LEFT JOIN customer_fav_category fc ON cs.customer_id = fc.customer_id AND fc.rn = 1
+LEFT JOIN customer_fav_payment fp ON cs.customer_id = fp.customer_id AND fp.rn = 1
+ORDER BY cs.lifetime_spend DESC;
+
+-- EXPECTED OUTPUT DESCRIPTION:
+-- Master Customer 360 table giving marketing, operations, and support teams an
+-- exhaustive profile of each buyer, ranked by total lifetime monetary contribution.
