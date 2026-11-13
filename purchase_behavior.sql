@@ -38,6 +38,26 @@ USE customer_analytics;
 --   - Customer tenure in days?
 -- -----------------------------------------------------------------------------
 
+WITH customer_order_metrics AS (
+    SELECT 
+        customer_id,
+        COUNT(order_id) AS total_orders,
+        COALESCE(SUM(total_amount), 0.00) AS total_spend,
+        COALESCE(AVG(total_amount), 0.00) AS avg_order_value,
+        MIN(order_date) AS first_order_date,
+        MAX(order_date) AS most_recent_order_date,
+        COALESCE(DATEDIFF(MAX(order_date), MIN(order_date)), 0) AS active_purchasing_span_days
+    FROM orders
+    GROUP BY customer_id
+),
+customer_item_metrics AS (
+    SELECT 
+        o.customer_id,
+        COALESCE(SUM(oi.quantity), 0) AS total_items_purchased
+    FROM orders o
+    JOIN order_items oi ON o.order_id = oi.order_id
+    GROUP BY o.customer_id
+)
 SELECT 
     c.customer_id,
     CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
@@ -45,25 +65,17 @@ SELECT
     c.city,
     c.state,
     c.registration_date,
-    COUNT(DISTINCT o.order_id) AS total_orders,
-    COALESCE(SUM(oi.quantity), 0) AS total_items_purchased,
-    COALESCE(SUM(o.total_amount), 0.00) AS total_spend_numeric,
-    CONCAT('₹', FORMAT(COALESCE(SUM(o.total_amount), 0.00), 2)) AS total_spend_formatted,
-    CONCAT('₹', FORMAT(COALESCE(AVG(o.total_amount), 0.00), 2)) AS average_order_value,
-    MIN(o.order_date) AS first_order_date,
-    MAX(o.order_date) AS most_recent_order_date,
-    COALESCE(DATEDIFF(MAX(o.order_date), MIN(o.order_date)), 0) AS active_purchasing_span_days
+    COALESCE(com.total_orders, 0) AS total_orders,
+    COALESCE(cim.total_items_purchased, 0) AS total_items_purchased,
+    COALESCE(com.total_spend, 0.00) AS total_spend_numeric,
+    CONCAT('₹', FORMAT(COALESCE(com.total_spend, 0.00), 2)) AS total_spend_formatted,
+    CONCAT('₹', FORMAT(COALESCE(com.avg_order_value, 0.00), 2)) AS average_order_value,
+    com.first_order_date,
+    com.most_recent_order_date,
+    COALESCE(com.active_purchasing_span_days, 0) AS active_purchasing_span_days
 FROM customers c
-LEFT JOIN orders o ON c.customer_id = o.customer_id
-LEFT JOIN order_items oi ON o.order_id = oi.order_id
-GROUP BY 
-    c.customer_id, 
-    c.first_name, 
-    c.last_name, 
-    c.email, 
-    c.city, 
-    c.state, 
-    c.registration_date
+LEFT JOIN customer_order_metrics com ON c.customer_id = com.customer_id
+LEFT JOIN customer_item_metrics  cim ON c.customer_id = cim.customer_id
 ORDER BY total_spend_numeric DESC;
 
 -- EXPECTED OUTPUT DESCRIPTION:
