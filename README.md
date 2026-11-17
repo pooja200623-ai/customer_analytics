@@ -332,11 +332,11 @@ To reproduce all analytics and validation checks, execute the SQL files in the f
 
 1. **Revenue Concentration (Pareto Principle)**:
    - The top **25% of customers** account for over **55% of total gross merchandise value (GMV)**.
-   - The top 10 spenders generated **₹16,26,965.00 out of ₹18,81,872.00 total platform revenue (86.45%)**, led by Karan Malhotra (₹3,54,847.00) and Varun Kapoor (₹2,41,889.00).
+   - The top 10 spenders generated **₹17,36,329.00 out of ₹19,99,518.00 total platform revenue (86.84%)**, led by Karan Malhotra (₹3,70,245.00) and Varun Kapoor (₹2,88,885.00).
 
 2. **Customer Retention Health**:
    - Out of 29 converted buyers, **19 customers returned for repeat purchases**, yielding a **65.52% repeat buyer retention rate**.
-   - Repeat buyers generate **98.4% of total company revenue**, with an average lifetime spend of **₹97,440.74** compared to ₹3,049.80 for one-time buyers (**31.95x higher**).
+   - Repeat buyers generate **98.29% of total company revenue**, with an average lifetime spend of **₹1,03,442.68** compared to ₹3,410.70 for one-time buyers (**30.33x higher**).
 
 3. **Purchase Cadence & Habituation Dynamics**:
    - The average interval between Order 1 and Order 2 is **342.7 days**, but between Order 2 and Order 3 it contracts significantly to **152.4 days**, and between Order 3 and Order 4 it drops to **116.0 days**, illustrating that once a customer becomes a repeat purchaser, their re-order cycle accelerates.
@@ -364,8 +364,10 @@ customer_analytics/
 ├── business_insights.sql          # Module 5: VIP spenders, demand drivers, weekday trends & Customer 360
 ├── data_quality_checks.sql        # Module 6: 30 diagnostic tests auditing nulls, orphans, duplicates & math
 ├── final_business_summary.sql     # Module 7: 10 executive KPI modules & Master Executive Dashboard
+├── reporting_views.sql            # Analytical Views: Reusable DDL reporting views for BI & dashboards
 │
 ├── FINAL_AUDIT_REPORT.md          # Comprehensive technical audit, data reconciliation & portfolio review
+├── FINAL_AUDIT_REPORT_UPDATED.md  # Re-audit verification matrix & post-remediation report
 └── README.md                      # Project documentation & GitHub portfolio showcase
 ```
 
